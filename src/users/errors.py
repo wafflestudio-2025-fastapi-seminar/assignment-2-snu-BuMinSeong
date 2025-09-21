@@ -32,7 +32,7 @@ class InvalidBioException(CustomException):
             error_message="BIO TOO LONG"
         )
 
-class invalidEmailException(CustomException):
+class InvalidEmailException(CustomException):
     def __init__(self):
         super().__init__(
             status_code=422,
