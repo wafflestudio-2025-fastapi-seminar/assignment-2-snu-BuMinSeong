@@ -21,10 +21,10 @@ def handle_request_validation_error(request: Request, exc: RequestValidationErro
 
     if only_missing:
         return JSONResponse(
-            status_code=401,
+            status_code=422,
             content={
                 "error_code": "ERR_001",
-                "error_message": "MISSING VALUE"
+                "error_msg": "MISSING VALUE"
             }
         )
     return JSONResponse(

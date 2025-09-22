@@ -58,7 +58,7 @@ def check_auth_header(authorization: str | None = Header(None)) -> str | None:
 def refresh_token(authorization: str | None = Depends(check_auth_header))->Tokens:
 
     refresh_token = authorization.split(" ")[1]
-    if any(refresh_token in token for token in blocked_token_db):
+    if refresh_token in blocked_token_db:
         raise InvalidTokenException()
     
     try:
@@ -128,26 +128,14 @@ def create_session(response: Response,
         "exp": int(time.time()) + LONG_SESSION_LIFESPAN * 60
     })
 
-    return {"message": "Session created"}
+    return
 
 @auth_router.delete("/session", status_code=status.HTTP_204_NO_CONTENT)
-def ftn(response: Response,
-        sid: str | None = Cookie(None)) -> Response:
-    if not sid:
-        return Response()
-    
-    response.set_cookie(
-        key="sid",
-        value="",
-        httponly=True,
-        max_age=0,
-        secure=True,
-        samesite="lax"
-    )
-
-    session = next((s for s in session_db if s["sid"] == sid), None)
-    if session:
-        session_db.remove(session)
-    
-    return {"message": "Session deleted"}
+def delete_session(response: Response, sid: str | None = Cookie(None)):
+    if sid:
+        response.delete_cookie("sid")
+        session = next((s for s in session_db if s["sid"] == sid), None)
+        if session:
+            session_db.remove(session)
+    return Response(status_code=204)
 

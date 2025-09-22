@@ -1,7 +1,5 @@
 import time
 
-from typing import Annotated
-
 import jwt
 from argon2 import PasswordHasher
 from src.auth.schemas import SECRET_KEY, ALGORITHM
@@ -9,11 +7,9 @@ from src.auth.schemas import SECRET_KEY, ALGORITHM
 
 from fastapi import (
     APIRouter,
-    Depends,
     Cookie,
     Header,
     status,
-    Request
 )
 
 from src.users.schemas import CreateUserRequest, UserResponse, Authorization
@@ -67,7 +63,7 @@ def get_user_info(sid: str | None = Cookie(None),
         if not authorization.startswith("Bearer "):
             raise AuthorizationHeaderException()
         
-        access_token = authorization.split(" ")
+        access_token = authorization.split(" ")[1]
         
         try:
             payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -77,7 +73,4 @@ def get_user_info(sid: str | None = Cookie(None),
             return UserResponse(**user)
         
         except jwt.InvalidTokenError:
-            raise InvalidTokenException()
-        
-        except jwt.ExpiredSignatureError:
             raise InvalidTokenException()
