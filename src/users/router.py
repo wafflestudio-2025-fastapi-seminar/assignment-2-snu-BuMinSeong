@@ -48,51 +48,36 @@ def create_user(request: CreateUserRequest) -> UserResponse:
         bio=request.bio
     )
 
-def get_current_user(request: Request) -> Authorization:
-    # authorize with session id
-    session_id = request.cookies.get("sid")
-    if session_id:
-        return Authorization(
-            auth_type="session_id",
-            session_id=session_id
-        )
-    # authorize with authorization header
-    auth_header = request.headers.get("Authorization")
-    if auth_header:
-        if not auth_header.startswith("Bearer "):
-            raise AuthorizationHeaderException()
-        token = auth_header.split(" ")[1]
-        return Authorization(
-            auth_type="token",
-            auth_token=token
-        )
-    
-    raise UnauthenticatedException()
-
 @user_router.get("/me", status_code=status.HTTP_200_OK)
-def get_user_info(authorization: Authorization =  Depends(get_current_user)) -> UserResponse:
-    if authorization.auth_type == "session_id":
-        session_id = authorization.session_id
-        session = next((s for s in session_db if s["sid"] == session_id), None)
-        
+def get_user_info(sid: str | None = Cookie(None),
+                    authorization: str | None = Header(None)) -> UserResponse:
+    if not sid and not authorization:
+        raise UnauthenticatedException()
+    
+    if sid:
+        session = next((s for s in session_db if s["sid"] == sid), None)
         if not session or session["exp"] < int(time.time()):
             raise InvalidSessionException()
-        
-        user = next((u for u in user_db if u["user_id"] == session["user_id"]), None)
-        
+        user = next((u for u in user_db if u["email"] == session["email"]), None)
         if not user:
             raise InvalidSessionException()
-
         return UserResponse(**user)
-    if authorization.auth_type == "token":
-        access_token = authorization.auth_token
+    
+    if authorization:
+        if not authorization.startswith("Bearer "):
+            raise AuthorizationHeaderException()
+        
+        access_token = authorization.split(" ")
+        
         try:
             payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
             user = next((u for u in user_db if u["email"] == payload.get("sub")), None)
             if not user:
                 raise InvalidTokenException()
             return UserResponse(**user)
-        except jwt.ExpiredSignatureError:
-            raise InvalidTokenException()
+        
         except jwt.InvalidTokenError:
+            raise InvalidTokenException()
+        
+        except jwt.ExpiredSignatureError:
             raise InvalidTokenException()

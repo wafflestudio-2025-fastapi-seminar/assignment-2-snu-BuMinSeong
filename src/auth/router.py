@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from fastapi import Header, Depends, Cookie, status, Request
+from fastapi import Header, Depends, Cookie, status, Response
 
 from common.database import blocked_token_db, session_db, user_db
 from schemas import *
@@ -9,6 +9,7 @@ from passlib.context import CryptContext
 
 import jwt
 import time
+import secrets
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 pwd_ctx = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -109,9 +110,44 @@ def delete_refresh_token(authorization: str | None = Depends(check_auth_header))
         raise InvalidTokenException()
 
 @auth_router.post("/session", status_code=status.HTTP_200_OK)
+def create_session(response: Response, 
+                   request: LoginRequest = Depends(authenticate_email_password)):
+    session_id = secrets.token_urlsafe(32)
+    response.set_cookie(
+        key="sid",
+        value=session_id,
+        httponly=True,
+        max_age=LONG_SESSION_LIFESPAN * 60,
+        secure=True,
+        samesite="lax"
+    )
 
+    session_db.append({
+        "sid": session_id,
+        "email": request.email,
+        "exp": int(time.time()) + LONG_SESSION_LIFESPAN * 60
+    })
+
+    return {"message": "Session created"}
 
 @auth_router.delete("/session", status_code=status.HTTP_204_NO_CONTENT)
-def ftn():
-    pass
+def ftn(response: Response,
+        sid: str | None = Cookie(None)) -> Response:
+    if not sid:
+        return Response()
+    
+    response.set_cookie(
+        key="sid",
+        value="",
+        httponly=True,
+        max_age=0,
+        secure=True,
+        samesite="lax"
+    )
+
+    session = next((s for s in session_db if s["sid"] == sid), None)
+    if session:
+        session_db.remove(session)
+    
+    return {"message": "Session deleted"}
 
