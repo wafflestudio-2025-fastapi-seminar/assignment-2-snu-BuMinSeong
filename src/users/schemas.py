@@ -3,7 +3,7 @@ import re
 from pydantic import BaseModel, field_validator, EmailStr
 from fastapi import HTTPException
 
-from users.errors import *
+from errors import *
 
 class CreateUserRequest(BaseModel):
     name: str
@@ -39,3 +39,16 @@ class UserResponse(BaseModel):
     phone_number: str
     bio: str | None = None
     height: float
+
+class Authorization(BaseModel):
+    auth_type: str
+    session_id: str | None = None
+    auth_token: str | None = None
+    
+    @field_validator('auth_type', mode='after')
+    def validate_auth_type(cls, v:str) -> str:
+        allowed = {"session_id", "token"}
+        if v not in allowed:
+            raise ValueError()
+        return v
+        
