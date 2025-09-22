@@ -1,17 +1,9 @@
 from pydantic import BaseModel, EmailStr
+import os
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
-class Tokens(BaseModel):
-    access_token: str
-    refresh_token: str
-
-class Session(BaseModel):
-    sid: str
-    user_id: int
-    exp: int
-
-SECRET_KEY = "1"
+SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key")
 ALGORITHM = "HS256"
