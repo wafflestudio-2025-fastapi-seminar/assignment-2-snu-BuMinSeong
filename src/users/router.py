@@ -75,7 +75,7 @@ def get_user_info(authorization: Authorization =  Depends(get_current_user)) -> 
         session_id = authorization.session_id
         session = next((s for s in session_db if s["sid"] == session_id), None)
         
-        if not session or session["exp"] < time.time():
+        if not session or session["exp"] < int(time.time()):
             raise InvalidSessionException()
         
         user = next((u for u in user_db if u["user_id"] == session["user_id"]), None)
@@ -88,7 +88,7 @@ def get_user_info(authorization: Authorization =  Depends(get_current_user)) -> 
         access_token = authorization.auth_token
         try:
             payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-            user = next((u for u in user_db if u["user_id"] == payload.get("sub")), None)
+            user = next((u for u in user_db if u["email"] == payload.get("sub")), None)
             if not user:
                 raise InvalidTokenException()
             return UserResponse(**user)
