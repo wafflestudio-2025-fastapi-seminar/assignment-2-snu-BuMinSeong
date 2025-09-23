@@ -27,7 +27,7 @@ class InvalidBioException(CustomException):
 class InvalidEmailException(CustomException):
     def __init__(self):
         super().__init__(
-            status_code=422,
+            status_code=409,
             error_code="ERR_005",
             error_message="EMAIL ALREADY EXISTS"
         )
