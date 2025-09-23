@@ -119,7 +119,6 @@ def create_session(response: Response,
         value=session_id,
         httponly=True,
         max_age=LONG_SESSION_LIFESPAN * 60,
-        secure=True,
         samesite="lax"
     )
 
