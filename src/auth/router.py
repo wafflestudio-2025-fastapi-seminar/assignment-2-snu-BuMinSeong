@@ -117,9 +117,7 @@ def create_session(response: Response,
     response.set_cookie(
         key="sid",
         value=session_id,
-        httponly=True,
         max_age=LONG_SESSION_LIFESPAN * 60,
-        samesite="lax"
     )
 
     session_db[session_id] = {
