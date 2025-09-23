@@ -15,7 +15,7 @@ auth_router = APIRouter(prefix="/auth", tags=["auth"])
 pwd_ctx = CryptContext(schemes=["argon2"], deprecated="auto")
 
 SHORT_SESSION_LIFESPAN = 15
-LONG_SESSION_LIFESPAN = 24 * 60
+LONG_SESSION_LIFESPAN = 24
 
 # check authorized user
 def authenticate_email_password(request: LoginRequest) -> LoginRequest:
@@ -126,6 +126,7 @@ def create_session(response: Response,
     session_db[session_id] = {
         "email": request.email,
         "exp": int(time.time()) + LONG_SESSION_LIFESPAN * 60
+        #"exp": int(time.time()) - 10
     }
 
     response.status_code = status.HTTP_200_OK
