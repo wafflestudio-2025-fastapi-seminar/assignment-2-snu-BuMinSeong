@@ -136,7 +136,13 @@ def create_session(response: Response,
 def delete_session(response: Response, sid: str | None = Cookie(None)) -> Response:
     if sid:
         session_db.pop(sid, None)
-        response.delete_cookie(key="sid", path="/")
+        response.delete_cookie(
+        key="sid",
+        path="/",
+        httponly=True,
+        secure=True,
+        samesite="lax"
+    )
 
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
