@@ -51,7 +51,7 @@ def get_user_info(sid: str | None = Cookie(None),
     
     if sid:
         session = session_db.get(sid)
-        if not session or session["exp"] < int(time.time()):
+        if not session or session["exp"] <= int(time.time()):
             raise InvalidSessionException()
         user = next((u for u in user_db if u["email"] == session["email"]), None)
         if not user:
