@@ -50,11 +50,8 @@ def token_based_authentication(request: LoginRequest = Depends(authenticate_emai
     }
 
 def check_auth_header(credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme)) -> str | None:
-    if not credentials:
+    if not credentials or credentials.scheme.lower() != "bearer":
         raise UnauthenticatedException()
-    if credentials.scheme.lower() != "bearer":
-        raise AuthorizationHeaderException()
-    
     return credentials
     
 @auth_router.post("/token/refresh", status_code=status.HTTP_200_OK)
