@@ -3,12 +3,11 @@ import time
 import jwt
 from argon2 import PasswordHasher
 from src.auth.schemas import SECRET_KEY, ALGORITHM
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 
 from fastapi import (
     APIRouter,
     Cookie,
-    Depends,
     Header,
     status,
 )
@@ -18,7 +17,6 @@ from src.common.database import session_db, user_db
 from src.users.errors import *
 
 user_router = APIRouter(prefix="/users", tags=["users"])
-bearer_scheme = HTTPBearer(auto_error=False)
 ph = PasswordHasher()
 
 @user_router.post("/", status_code=status.HTTP_201_CREATED)
@@ -47,26 +45,10 @@ def create_user(request: CreateUserRequest) -> UserResponse:
 
 @user_router.get("/me", status_code=status.HTTP_200_OK)
 def get_user_info(sid: str | None = Cookie(None),
-                    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme)
+                    authorization: str | None = Header(None)
                     ) -> UserResponse:
-    if not sid and not credentials:
+    if not sid and not authorization:
         raise UnauthenticatedException()
-    
-    if credentials:
-        if credentials.scheme.lower() != "bearer":
-            raise AuthorizationHeaderException()
-        
-        access_token = credentials.credentials
-        try:
-            payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-            user = next((u for u in user_db if u["email"] == payload.get("sub")), None)
-            if not user:
-                raise InvalidTokenException()
-            return UserResponse(**user)
-        except jwt.ExpiredSignatureError:
-            raise InvalidTokenException()
-        except jwt.InvalidTokenError:
-            raise InvalidTokenException()
     
     if sid:
         session = session_db.get(sid)
@@ -76,4 +58,19 @@ def get_user_info(sid: str | None = Cookie(None),
         if not user:
             raise InvalidSessionException()
         return UserResponse(**user)
-
+    
+    if authorization:
+        if not authorization.startswith("Bearer "):
+            raise AuthorizationHeaderException()
+        
+        access_token = authorization.split(" ")[1]
+        
+        try:
+            payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+            user = next((u for u in user_db if u["email"] == payload.get("sub")), None)
+            if not user:
+                raise InvalidTokenException()
+            return UserResponse(**user)
+        
+        except jwt.InvalidTokenError:
+            raise InvalidTokenException()
