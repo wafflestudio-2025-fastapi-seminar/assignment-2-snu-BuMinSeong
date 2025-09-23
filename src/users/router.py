@@ -21,7 +21,6 @@ ph = PasswordHasher()
 
 @user_router.post("/", status_code=status.HTTP_201_CREATED)
 def create_user(request: CreateUserRequest) -> UserResponse:
-    
     # Handles Email Repeatition Exception
     for user in user_db:
         if user["email"] == request.email:
