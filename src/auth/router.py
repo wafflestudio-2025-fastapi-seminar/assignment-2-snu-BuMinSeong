@@ -133,7 +133,10 @@ def create_session(response: Response,
     return response
 
 @auth_router.delete("/session", status_code=status.HTTP_204_NO_CONTENT)
-def delete_session(response: Response, sid: str | None = Cookie(None)) -> Response:
+@auth_router.delete("/session", status_code=204)
+def delete_session(sid: str | None = Cookie(None)):
+    response = Response(status_code=204)
+
     if sid:
         session_db.pop(sid, None)
         response.delete_cookie(
@@ -144,5 +147,4 @@ def delete_session(response: Response, sid: str | None = Cookie(None)) -> Respon
             samesite="lax"
         )
 
-    response.status_code = status.HTTP_204_NO_CONTENT
     return response
