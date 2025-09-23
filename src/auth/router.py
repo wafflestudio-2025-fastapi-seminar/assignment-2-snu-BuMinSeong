@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 from fastapi import Header, Depends, Cookie, status, Response
 
-from common.database import blocked_token_db, session_db, user_db
-from schemas import *
+from src.common.database import blocked_token_db, session_db, user_db
+from .schemas import *
 from src.users.errors import *
 
 from passlib.context import CryptContext
@@ -27,7 +27,7 @@ def authenticate_email_password(request: LoginRequest) -> LoginRequest:
     return request
 
 @auth_router.post("/token", status_code=status.HTTP_200_OK)
-def token_based_authentication(request: LoginRequest = Depends(authenticate_email_password)) -> Tokens:
+def token_based_authentication(request: LoginRequest = Depends(authenticate_email_password)):
     now = int(time.time())
 
     access_token_payload={
@@ -41,10 +41,11 @@ def token_based_authentication(request: LoginRequest = Depends(authenticate_emai
         "exp": now + LONG_SESSION_LIFESPAN * 60
     }
     refresh_token = jwt.encode(refresh_token_payload, SECRET_KEY, algorithm=ALGORITHM)
-    return Tokens(
-        access_token = access_token,
-        refresh_token = refresh_token
-    )
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token
+    }
 
 def check_auth_header(authorization: str | None = Header(None)) -> str | None:
     if not authorization:
@@ -55,7 +56,7 @@ def check_auth_header(authorization: str | None = Header(None)) -> str | None:
     return authorization
     
 @auth_router.post("/token/refresh", status_code=status.HTTP_200_OK)
-def refresh_token(authorization: str | None = Depends(check_auth_header))->Tokens:
+def refresh_token(authorization: str | None = Depends(check_auth_header)):
 
     refresh_token = authorization.split(" ")[1]
     if refresh_token in blocked_token_db:
@@ -79,10 +80,10 @@ def refresh_token(authorization: str | None = Depends(check_auth_header))->Token
             "exp": now + LONG_SESSION_LIFESPAN * 60
         }
         refresh_token = jwt.encode(refresh_token_payload, SECRET_KEY, algorithm=ALGORITHM)
-        return Tokens(
-            access_token = access_token,
-            refresh_token = refresh_token
-        )
+        return {
+        "access_token": access_token,
+        "refresh_token": refresh_token
+    }
 
     except jwt.ExpiredSignatureError:
         raise InvalidTokenException()

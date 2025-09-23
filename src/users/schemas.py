@@ -1,9 +1,7 @@
 import re
 
 from pydantic import BaseModel, field_validator, EmailStr
-from fastapi import HTTPException
-
-from errors import *
+from src.users.errors import *
 
 class CreateUserRequest(BaseModel):
     name: str

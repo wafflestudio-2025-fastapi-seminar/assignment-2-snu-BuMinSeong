@@ -12,8 +12,8 @@ from fastapi import (
     status,
 )
 
-from src.users.schemas import CreateUserRequest, UserResponse, Authorization
-from common.database import blocked_token_db, session_db, user_db
+from src.users.schemas import CreateUserRequest, UserResponse
+from src.common.database import session_db, user_db
 from src.users.errors import *
 
 user_router = APIRouter(prefix="/users", tags=["users"])
@@ -32,7 +32,6 @@ def create_user(request: CreateUserRequest) -> UserResponse:
     user_id = len(user_db) + 1
     user = request.model_dump(exclude={"password"}, by_alias=False)
     user.update({"user_id": user_id, "hashed_password": hashed_password})
-
     user_db.append(user)
 
     return UserResponse(

@@ -1,11 +1,10 @@
-from fastapi import FastAPI, status, Request
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from tests.util import get_all_src_py_files_hash
 from src.api import api_router
 
-from src.users.schemas import CreateUserRequest, UserResponse
 from src.users.errors import *
 
 app = FastAPI()
