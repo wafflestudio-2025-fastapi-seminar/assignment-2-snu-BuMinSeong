@@ -1,5 +1,6 @@
 import pytest
 import json
+import time
 from time import sleep
 from freezegun import freeze_time
 from datetime import timedelta
@@ -244,6 +245,10 @@ def test_profile_with_expired_session(
     with freeze_time() as frozen_time:
         frozen_time.tick(delta=future_time)
         client.cookies.set("sid", session_id)
+
+        session = session_db.get(session_id)
+        print("exp:", session["exp"], "now:", int(time.time()))
+
         res = client.get("/api/users/me")
         res_json = res.json()
 
