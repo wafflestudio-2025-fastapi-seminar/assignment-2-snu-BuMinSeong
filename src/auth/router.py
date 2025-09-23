@@ -139,9 +139,6 @@ def delete_session(response: Response, sid: str | None = Cookie(None)) -> Respon
         response.delete_cookie(
         key="sid",
         path="/",
-        httponly=True,
-        secure=True,
-        samesite="lax"
     )
 
     response.status_code = status.HTTP_204_NO_CONTENT
