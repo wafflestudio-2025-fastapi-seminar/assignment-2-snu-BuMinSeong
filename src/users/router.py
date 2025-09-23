@@ -1,4 +1,4 @@
-import time
+from datetime import datetime
 
 import jwt
 from argon2 import PasswordHasher
@@ -51,7 +51,7 @@ def get_user_info(sid: str | None = Cookie(None),
     
     if sid:
         session = session_db.get(sid)
-        if not session or session.get("exp") <= int(time.time()):
+        if not session or session.get("exp") <= int(datetime.now().timestamp()):
             raise InvalidSessionException()
         user = next((u for u in user_db if u["email"] == session["email"]), None)
         if not user:

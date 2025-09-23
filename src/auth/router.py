@@ -8,8 +8,8 @@ from src.users.errors import *
 from passlib.context import CryptContext
 
 import jwt
-import time
 import secrets
+from datetime import datetime
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 pwd_ctx = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -28,7 +28,7 @@ def authenticate_email_password(request: LoginRequest) -> LoginRequest:
 
 @auth_router.post("/token", status_code=status.HTTP_200_OK)
 def token_based_authentication(request: LoginRequest = Depends(authenticate_email_password)):
-    now = int(time.time())
+    now = int(datetime.now().timestamp())
 
     access_token_payload={
         "sub": request.email,
@@ -69,7 +69,7 @@ def refresh_token(authorization: str | None = Depends(check_auth_header)):
             raise InvalidTokenException()
         blocked_token_db[refresh_token] = payload["exp"]
 
-        now = int(time.time())
+        now = int(datetime.now().timestamp())
         access_token_payload={
             "sub": payload.get("sub"),
             "exp": now + SHORT_SESSION_LIFESPAN * 60
@@ -122,7 +122,7 @@ def create_session(response: Response,
 
     session_db[session_id] = {
         "email": request.email,
-        "exp": int(time.time()) + LONG_SESSION_LIFESPAN * 60
+        "exp": int(datetime.now().timestamp()) + LONG_SESSION_LIFESPAN * 60
     }
 
     response.status_code = status.HTTP_200_OK
