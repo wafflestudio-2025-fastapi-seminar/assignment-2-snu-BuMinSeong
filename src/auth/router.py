@@ -123,11 +123,10 @@ def create_session(response: Response,
         samesite="lax"
     )
 
-    session_db.append({
-        "sid": session_id,
+    session_db[session_id] = {
         "email": request.email,
         "exp": int(time.time()) + LONG_SESSION_LIFESPAN * 60
-    })
+    }
 
     return
 
@@ -135,8 +134,7 @@ def create_session(response: Response,
 def delete_session(response: Response, sid: str | None = Cookie(None)):
     if sid:
         response.delete_cookie("sid")
-        session = next((s for s in session_db if s["sid"] == sid), None)
-        if session:
-            session_db.remove(session)
+        if sid in session_db:
+            del session_db[sid]
     return Response(status_code=204)
 
