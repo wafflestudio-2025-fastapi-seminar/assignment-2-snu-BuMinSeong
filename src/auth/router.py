@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from fastapi import Header, Depends, Cookie, status, Response
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from src.common.database import blocked_token_db, session_db, user_db
 from .schemas import *
@@ -13,9 +14,10 @@ import secrets
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 pwd_ctx = CryptContext(schemes=["argon2"], deprecated="auto")
+bearer_scheme = HTTPBearer(auto_error=False)
 
 SHORT_SESSION_LIFESPAN = 15
-LONG_SESSION_LIFESPAN = 24
+LONG_SESSION_LIFESPAN = 24 * 60
 
 # check authorized user
 def authenticate_email_password(request: LoginRequest) -> LoginRequest:
@@ -47,18 +49,18 @@ def token_based_authentication(request: LoginRequest = Depends(authenticate_emai
         "refresh_token": refresh_token
     }
 
-def check_auth_header(authorization: str | None = Header(None)) -> str | None:
-    if not authorization:
+def check_auth_header(credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme)) -> str | None:
+    if not credentials:
         raise UnauthenticatedException()
-    if not authorization.startswith("Bearer "):
+    if credentials.scheme.lower() != "bearer":
         raise AuthorizationHeaderException()
     
-    return authorization
+    return credentials
     
 @auth_router.post("/token/refresh", status_code=status.HTTP_200_OK)
-def refresh_token(authorization: str | None = Depends(check_auth_header)):
+def refresh_token(credentials: HTTPAuthorizationCredentials | None = Depends(check_auth_header)):
 
-    refresh_token = authorization.split(" ")[1]
+    refresh_token = credentials.credentials
     if refresh_token in blocked_token_db:
         raise InvalidTokenException()
     
@@ -91,10 +93,10 @@ def refresh_token(authorization: str | None = Depends(check_auth_header)):
         raise InvalidTokenException()
 
 @auth_router.delete("/token",status_code=status.HTTP_204_NO_CONTENT)
-def delete_refresh_token(authorization: str | None = Depends(check_auth_header)):
+def delete_refresh_token(credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme)):
     
-    refresh_token = authorization.split(" ")[1]
-    if any(refresh_token in token for token in blocked_token_db):
+    refresh_token = credentials.credentials
+    if refresh_token in blocked_token_db:
         raise InvalidTokenException()
     
     try:
@@ -103,7 +105,7 @@ def delete_refresh_token(authorization: str | None = Depends(check_auth_header))
         if not user:
             raise InvalidTokenException()
         blocked_token_db[refresh_token] = payload["exp"]
-        return
+        return Response(status_code=204)
 
     except jwt.ExpiredSignatureError:
         raise InvalidTokenException()
@@ -139,5 +141,5 @@ def delete_session(response: Response, sid: str | None = Cookie(None)) -> Respon
         response.delete_cookie(key="sid", path="/")
 
     response.status_code = status.HTTP_204_NO_CONTENT
-    return response
+    return Response(status_code=204)
 
