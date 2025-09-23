@@ -112,7 +112,7 @@ def delete_refresh_token(authorization: str | None = Depends(check_auth_header))
 
 @auth_router.post("/session", status_code=status.HTTP_200_OK)
 def create_session(response: Response, 
-                   request: LoginRequest = Depends(authenticate_email_password)):
+                   request: LoginRequest = Depends(authenticate_email_password)) -> Response:
     session_id = secrets.token_urlsafe(32)
     response.set_cookie(
         key="sid",
@@ -128,12 +128,15 @@ def create_session(response: Response,
         "exp": int(time.time()) + LONG_SESSION_LIFESPAN * 60
     }
 
-    return
+    response.status_code = status.HTTP_200_OK
+    return response
 
 @auth_router.delete("/session", status_code=status.HTTP_204_NO_CONTENT)
-def delete_session(response: Response, sid: str | None = Cookie(None)):
+def delete_session(response: Response, sid: str | None = Cookie(None)) -> Response:
     if sid:
         session_db.pop(sid, None)
         response.delete_cookie(key="sid", path="/")
-    return
+
+    response.status_code = status.HTTP_204_NO_CONTENT
+    return response
 
